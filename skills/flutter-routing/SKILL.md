@@ -7,36 +7,36 @@ Follow these routing rules strictly when working on Flutter code.
 
 ## Navigation Method
 
-Use `onGenerateRoute` for all navigation. Never use `MaterialPageRoute` directly in UI code.
+Use `go_router` for all navigation. Do not use legacy imperative navigation (`Navigator.push`) or custom `onGenerateRoute`.
 
 ## Structure
 
 ```
 lib/
 └── core/
-    └── app_route.dart      # Central route generator
+    └── app_route.dart      # Central GoRouter configuration
 ```
 
 ## Rules
 
-### Route Declaration
-- The `AppRoute` class lives in its **own file** (`app_route.dart`).
-- Each screen declares its route name as a **static constant** on the widget class itself:
+### Route Declaration`
+- The `AppRouter` class lives in its **own file** (`app_route.dart`).
+- Declare route path constants inside the `AppRouter` class.
+- GoRoute builder should construct pages cleanly.
+
+### Navigation and GoRouter Usage
+- **Always navigate using GoRouter context extension methods**: `context.go(AppRouter.path)` or `context.push(AppRouter.path)`.
+- Use `context.go()` for absolute navigation (resets stack when switching top-level/tabs/flows) and `context.push()` to push a route onto the stack.
+
+### Route Arguments and Parameters
+- For URL-friendly paths and deep linking, pass identifiers or minimal parameters as **path parameters** (e.g. `/profile/:id`) or **query parameters** (e.g. `/search?query=foo`).
+- Access path parameters via `state.pathParameters` and query parameters via `state.uri.queryParameters`.
+- For complex, non-serializable objects (when necessary), pass them in the route state's `extra` parameter:
   ```dart
-  class PlayerDetailScreen extends StatelessWidget {
-    static const routeName = '/player-detail';
-  }
+  context.push(AppRouter.detail, extra: item);
   ```
-- In `AppRoute.onGenerateRoute`, use **direct widget references** to build pages. Do not maintain a global `Map<String, Widget>`.
+  And extract them using `state.extra`.
 
-### Arguments
-- Pass only **IDs or minimal data** as route arguments.
-- The destination screen fetches its own data — never pass entire model objects through navigation.
-- Use typed argument classes when a route needs more than one parameter.
-
-### Named Routes
-- **Always navigate via named routes**: `Navigator.pushNamed(context, PlayerDetailScreen.routeName)`.
-- Never construct `MaterialPageRoute` inline in widget code.
-
-### Deep Linking
-- Keep route names URL-friendly (`/player-detail`, `/match-history`) to support future deep linking.
+### Error Handling & Deep Linking
+- Keep route names and paths lowercase and URL-friendly (e.g. `/role-selection`).
+- Implement or maintain a user-friendly `errorBuilder` to catch undefined routes and prevent crashes.

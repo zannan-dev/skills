@@ -43,16 +43,14 @@ lib/
 - Each entry point loads its own configuration (API base URL, feature flags, debug settings).
 
 ### Global Context
-- Add `navigatorKey` in `MaterialApp` and use it to access context globally in helper classes (for navigation, dialogs, toasts outside the widget tree).
+- Add `navigatorKey` to the GoRouter configuration and use it to access context globally in helper classes (for navigation, dialogs, toasts outside the widget tree).
 
 ### Navigation Shell
-- Implement a **navigation screen** that holds the sidebar and body navigators only; do not place the top bar in the navigation screen.
+- Implement a **navigation screen** (using GoRouter's `ShellRoute` or `StatefulShellRoute`) that holds the sidebar and body branch only; do not place the top bar in the navigation screen.
 - The shared admin top appbar belongs only inside first-level navigation destination screens, such as dashboards, listings, and index screens rendered directly from the sidebar/right navigation body.
 - Nested detail, create, edit, profile, and form screens must not include the shared admin top appbar or its user/session details. Use a compact local action row or detail header for Back, Save, Reset, Refresh, and record-specific actions instead.
 - Shared admin top bars should not contain global search, date range, notification actions, or desktop sidebar collapse/expand controls unless a first-level page explicitly owns that feature.
 - The navigation shell may own sidebar collapsed/expanded state and persistence callbacks, but the sidebar widget renders the desktop collapse/expand control.
 - Page top bars may render narrow-layout drawer open controls when the sidebar is hidden.
-- Use **multiple navigators** in the body for displaying content based on sidebar selections.
-- In production/non-debug builds, keep body navigators mounted with an `IndexedStack` so each sidebar item preserves its nested route stack and local widget state while switching sections.
-- In debug builds, mount only the selected body navigator through a small child widget keyed by the selected index so development cycles avoid eagerly building every section.
+- In production/non-debug builds, keep body branches mounted (e.g. using `StatefulShellRoute.indexedStack`) so each sidebar item preserves its nested route stack and local widget state while switching sections.
 - Treat the navigation shell as its own feature (`features/navigation/`).

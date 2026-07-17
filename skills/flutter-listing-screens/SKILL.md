@@ -55,7 +55,7 @@ Follow these Flutter implementation rules for listing screens. Read `frontend-li
 - Wrap only the table/header/body region in horizontal scrolling when columns overflow.
 - Reuse the shared checkbox column and table-header select-all widgets when the shared listing UX requires selection.
 - Navigate to the details page from row-body taps only; checkbox cells and row action buttons must consume their own taps.
-- Navigate details pages with named routes through the current `BuildContext` navigator; in nested admin shells, keep the detail page inside the active section navigator.
+- Navigate details pages using GoRouter (`context.go` or `context.push`); in nested admin shells, keep the detail page inside the active section router.
 
 ## Mobile Flutter Listings
 
