@@ -106,11 +106,15 @@ Rules:
 
 ## External Clients
 
-- For Next.js and Flutter clients, expose a small realtime adapter instead of scattering Socket.IO code across pages.
+- For Next.js and Flutter clients, expose a small realtime adapter instead of scattering Socket.IO code across pages. Own one connection per authenticated client session/backend boundary and multiplex all mounted consumers over it. Shared source code alone does not prevent each instance from opening another socket.
+- Reference-count doctype/document rooms across consumers; release a room only when its last owner leaves. Dispose consumer listeners independently, restore each unique room once after recovery, and run one bounded retry/credential-validation cycle per connection. Invalidate the old connection on logout or credential replacement; never let stale consumers reconnect using a newer session.
 - Keep event names, room names, and payload shapes typed or centralized.
 - Connect to the site Socket.IO namespace that matches the Frappe site.
 - For Masar Admin Flutter, the Socket.IO URL must include the namespace in both local and production. Local: `http://masar.localhost:9000/masar.localhost`. Production: `https://masaradmin.conceptiqs.com/masarbackend.conceptiqs.com`. Keep production HTTP APIs pointed at `https://masarbackend.conceptiqs.com`; do not change API base URL just to change the socket host.
-- Use token auth for Flutter Socket.IO with `Authorization: token <api_key>:<api_secret>` in `extraHeaders`, `path: /socket.io`, and transports `['polling', 'websocket']`.
+- Use the stored credential scheme for Flutter Socket.IO (`Authorization: token <api_key>:<api_secret>` for legacy keys, `FlutterDevice` for managed-device credentials), with `path: /socket.io`. Header-authenticated Flutter web uses polling because browser WebSocket handshakes cannot attach arbitrary headers; native clients can use WebSocket headers. Do not assume a browser upgrade retains authentication.
+- Many independent polling sessions can exhaust browser HTTP connection slots, especially when retained tabs mount all screens. Diagnose queued handshakes, delayed heartbeats, and `Session ID unknown` responses; do not mask the cause with longer timeouts or more retries.
+- For local separate frontend/backend ports, verify the Node realtime authentication URL targets Frappe, not the Flutter server. In the standard Frappe development routing, bench-level `developer_mode` rewrites the browser Origin port to `webserver_port`; restart the Node process after changing it. Do not enable development mode in production as a socket workaround.
+- For separate production domains, inspect the installed Frappe origin/namespace checks and proxy `/socket.io/` through the frontend host when appropriate. Set `X-Frappe-Site-Name` to the backend site; upstream Host and Origin must satisfy the middleware's hostname check, and the authentication destination must be the backend. Preserve Authorization, polling GET/POST, and WebSocket upgrade support. CORS alone does not override origin checks.
 - Subscribe only after the user is authenticated and authorized for the target DocType or document.
 - Listing listeners should invalidate/refetch the affected row or first page. Avoid unbounded full-list reloads unless the collection is intentionally tiny.
 - Detail listeners should refetch the current record by ID.
@@ -124,3 +128,4 @@ Rules:
 - Confirm unsaved detail edits are not overwritten by a remote update.
 - Confirm delete/cancel/archive flows remove or update visible rows according to the active filters.
 - Confirm no duplicate network requests accumulate after navigating away and back.
+- With many mounted consumers, confirm a single session connection and unique room subscriptions. Observe at least two heartbeat cycles, test recovery and logout/re-login, and inspect socket response bodies rather than interpreting successful HTTP statuses as successful socket authentication.

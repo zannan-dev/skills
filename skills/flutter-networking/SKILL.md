@@ -30,10 +30,13 @@ Use **Dio** as the sole HTTP client.
 
 ## Frappe Socket.IO
 
-- Keep Frappe Socket.IO setup in a shared realtime service, not inside widgets or BLoCs.
+- Keep Frappe Socket.IO setup in a shared realtime service, not inside widgets or BLoCs. Share one underlying connection per authenticated session/backend boundary; a shared service class that creates a new socket for each screen is not connection sharing.
+- Give screens scoped leases/listeners over the session connection. Reference-count DocType and document subscriptions: emit subscribe on the first owner, unsubscribe on the last, and make duplicate subscribe/dispose calls idempotent. Filter document/list events to each lease's subscriptions. Disposing one screen must not disconnect other screens.
+- Retained navigation trees such as `IndexedStack` mount hidden screens too. Do not let those screens create independent polling connections. Browser HTTP/1 connection limits can stall handshakes and heartbeat traffic, causing connection timeouts, retry bursts, and `Session ID unknown` responses.
 - Build the socket URL as `{socket_base}/{site_namespace}`. For Masar Admin local use `http://masar.localhost:9000/masar.localhost`; for production use `https://masaradmin.conceptiqs.com/masarbackend.conceptiqs.com`.
 - Keep API and socket hosts separate when needed. Masar Admin production HTTP APIs use `https://masarbackend.conceptiqs.com`; only Socket.IO uses the admin host `https://masaradmin.conceptiqs.com` as its base.
-- Configure Socket.IO with `path: /socket.io`, transports `['polling', 'websocket']`, reconnection enabled, and `Authorization: token <api_key>:<api_secret>` in `extraHeaders`.
+- Configure Socket.IO with `path: /socket.io` and the current credential's authorization scheme (`token` or `FlutterDevice`) in `extraHeaders`. Browser WebSocket handshakes cannot carry arbitrary headers: use polling for header-authenticated browser connections unless a supported secure WebSocket auth mechanism is implemented; native clients can use WebSocket headers. Do not enable an unauthenticated browser upgrade just to avoid polling limits.
+- Use one bounded recovery controller for the shared connection. If it owns retries and credential validation, disable Socket.IO's built-in reconnection to prevent competing retry loops. On recovery restore each unique room once and invalidate subscribed data. Stop on logout/credential changes, detach the old hub from new acquisitions, and create a fresh hub for the next login.
 - Subscribe to Frappe DocType rooms with `doctype_subscribe`, unsubscribe with `doctype_unsubscribe`, and listen for `list_update`.
 - Parse `list_update` as either a direct map or a one-item array containing the map; treat it as an invalidation hint and reload through the repository/BLoC path.
 - Gate Socket.IO debug logs with `kDebugMode` after testing; do not print realtime diagnostics in production builds.
@@ -77,3 +80,5 @@ Screen → BLoC → Repository → Dio (API Client)
 - Cover public login, managed-credential reads, authenticated logout, concurrent 401s, and stale failures after re-login.
 - Preserve multipart handling, cancellation, local site routing, and web cookie policy.
 - Follow the shared client's verification checklist and run focused Flutter tests and analysis.
+- Test many simultaneous screen leases with one socket, overlapping room ownership, lease-scoped events, one credential validation/reconnect per failure, final-lease cleanup, and re-login while old leases still exist.
+- In browser testing observe more than two heartbeat cycles, navigate retained screens, and confirm only one polling session remains. Inspect Socket.IO packet bodies and queued timing, not just HTTP 200/204 status codes. Keep image CORS errors separate from realtime diagnosis.

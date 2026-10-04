@@ -73,5 +73,12 @@ Ensure users can always dismiss the keyboard on both iOS and Android, especially
 
 ## Save Feedback
 
+- Read `flutter-theming.md` whenever adding user-facing form feedback. Use the app's shared toast helper for save success and async failures; never use `SnackBar`, `showSnackBar`, or `ScaffoldMessenger` messages. Keep field-specific inline validation where required by `frontend-forms.md`.
 - Surface create and update success through screen-level state handling (for example, separate `Created` and `Updated` states) so operators get clear confirmation exactly once.
 - Keep error messaging distinct from success to avoid mixed or repeated feedback when listing screens also refresh after save.
+
+## Verification
+
+- Check changed form files for prohibited snackbar message calls and use the existing shared toast helper.
+- Verify one correctly typed success/error toast per save outcome, with inline field errors preserved where applicable.
+- Run `dart format` and targeted Flutter analysis.

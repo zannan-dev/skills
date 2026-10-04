@@ -12,6 +12,8 @@ Follow these Flutter theming implementation rules strictly. Visual behavior and 
 ## Notifications
 
 - Never use Snackbars for user-facing messages. Use the `toastification` package or the app's toast helper.
+- This includes form saves, publishing, validation feedback, authentication, and async failure messages—not only theme changes. Do not introduce `SnackBar`, `showSnackBar`, or `ScaffoldMessenger` message calls in feature code.
+- Reuse the app's existing toast helper before calling `toastification` directly. Masar Admin uses `ToastHelper.success/error/info` from `lib/core/utils/toast_helper.dart`; Masar mobile uses `AppToast` from `lib/core/utils/app_toast.dart`.
 - Toast helpers must support multi-line and larger messages.
 - Use appropriate toast types: success, error, warning, info.
 
@@ -29,3 +31,9 @@ Follow these Flutter theming implementation rules strictly. Visual behavior and 
 - Support light/dark themes where the app supports them.
 - In this app, keep detail/list surfaces on white backgrounds by using `scaffoldBackgroundColor`/`canvasColor` set to white in the app theme.
 - For form controls, prefer shared input tokens rather than per-screen overrides: darker outline borders for clearer field distinction and a subtle filled background for text inputs.
+
+## Verification
+
+- Search touched Flutter files for `SnackBar`, `showSnackBar`, and `ScaffoldMessenger`; user-facing feedback must use the shared toast helper instead.
+- Confirm success and failure use the correct toast type and are emitted once from screen-level listeners.
+- Run `dart format` and targeted Flutter analysis on changed files.
